@@ -13,6 +13,7 @@ const port = 3002;
 //   idleTimeoutMillis: 30000,
 // });
 
+console.log("Testing SAST scanner");
 
 app.use(express.json())
 
