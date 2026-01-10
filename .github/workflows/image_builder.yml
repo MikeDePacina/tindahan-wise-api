@@ -32,6 +32,7 @@ jobs:
       with:
         node-version: '22.x'
         cache: 'npm'
+    - run: npm install
     - run: npm run test
   codacy-security-scan:
     permissions:
