@@ -11,7 +11,7 @@
 # For more information on Codacy Analysis CLI in general, see
 # https://github.com/codacy/codacy-analysis-cli.
 
-name: Codacy Security Scan
+name: Test, scan, build and push image
 
 on:
   push:
@@ -20,7 +20,19 @@ on:
 permissions:
   contents: read
 
+
+
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js 22.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x'
+        cache: 'npm'
+    - run: npm run test
   codacy-security-scan:
     permissions:
       contents: read # for actions/checkout to fetch code
