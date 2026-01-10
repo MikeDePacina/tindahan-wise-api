@@ -1,7 +1,7 @@
-import sales from "./sales.js"
+const sales = require("./sales.js")
 
 const mountRoutes = (app) => {
     app.use('/sales', sales)
 }
 
-export default mountRoutes
+module.exports = mountRoutes

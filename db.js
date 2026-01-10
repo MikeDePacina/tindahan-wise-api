@@ -1,4 +1,4 @@
-import { Pool } from "pg"
+const { Pool } = require("pg")
 
 const pool = new Pool({
   host: process.env.POSTGRES_HOST || "db",
@@ -9,8 +9,9 @@ const pool = new Pool({
   idleTimeoutMillis: 30000,
 });
 
-export const query = (text, params = []) => {
+const query = (text, params = []) => {
   return pool.query(text, params)
 }
 
-// export default pool;
+module.exports = query 
+

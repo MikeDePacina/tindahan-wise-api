@@ -1,5 +1,5 @@
-import express from 'express';
-import mountRoutes from './routes/index.js';
+const express = require('express');
+const mountRoutes = require('./routes/index.js');
 
 const app = express();
 const port = 3002;
@@ -22,4 +22,4 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
-export default app;
+module.exports = app;

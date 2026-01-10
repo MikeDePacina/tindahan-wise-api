@@ -1,10 +1,7 @@
-import { Router } from "express"
-import * as db from "../db.js"
-
+const { Router } = require("express")
+const { db } = require("../db.js")
 
 const router = Router()
-
-export default router
 
 router.get('/', async (req, res) => {
   const { rows } = await db.query('SELECT * FROM sales')
@@ -23,5 +20,5 @@ router.get('/:saleId', async(req, res) => {
 })
 
 
-
+module.exports = router
 
