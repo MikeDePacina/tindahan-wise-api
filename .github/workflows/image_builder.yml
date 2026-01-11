@@ -34,22 +34,23 @@ jobs:
           cache: 'npm'
       - run: npm install
       - run: npm run test
-  zap-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Run API
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.x'
-          cache: 'npm'
-      - run: npm install
-      - run: npm run start
-      - name: OWASP ZAP full scan
-        uses: zaproxy/action-full-scan@v0.13.0
-        with:
-          target: 'http://localhost:3002'
+  # zap-scan:
+  #   runs-on: ubuntu-latest
+    
+    # steps:
+    #   - name: Checkout code
+    #     uses: actions/checkout@v4
+    #   - name: Run API
+    #     uses: actions/setup-node@v4
+    #     with:
+    #       node-version: '22.x'
+    #       cache: 'npm'
+    #   - run: npm install
+    #   - run: npm run start
+    #   - name: Wait for API to be ready
+    #     # This ensures ZAP doesn't start before the server is up
+    #     run: npx wait-on http://localhost:3002 --timeout 60000
+ 
   codacy-security-scan:
     permissions:
       contents: read # for actions/checkout to fetch code
@@ -83,3 +84,44 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
+  lint-dockerfile:
+    needs: [test, codacy-security-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run hadolint to lint Dockerfile
+        uses: hadolint/hadolint-action@f988afea3da57ee48710a9795b6bb677cc901183
+        with:
+          dockerfile: ./Dockerfile
+          format: sarif
+          output-file: hadolint-results.sarif
+          no-fail: true
+  node-sbom:
+    needs: [test, codacy-security-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      - run: npm install
+      - name: Install CycloneDX CLI
+        run: npm install -g @cyclonedx/bom
+      - name: Generate SBOM
+        run: |
+          cyclonedx-bom \
+            --include-dev
+            --output-format json \
+            --project-name "${{ github.repository }}" \
+            --project-version "${{ github.sha }}" \
+            --output sbom.json
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.json
+

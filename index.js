@@ -2,7 +2,7 @@ const express = require('express');
 const mountRoutes = require('./routes/index.js');
 
 const app = express();
-const port = 3002;
+const port = 3002 || PROCESS.ENV.PORT;
 
 app.use(express.json())
 
