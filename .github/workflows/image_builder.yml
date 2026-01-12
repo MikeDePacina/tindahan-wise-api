@@ -81,7 +81,7 @@ jobs:
 
       # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: results.sarif
   lint-dockerfile:
@@ -97,6 +97,10 @@ jobs:
           format: sarif
           output-file: hadolint-results.sarif
           no-fail: true
+      - name: Upload SARIF results file
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: hadolint-results.sarif
   node-sbom:
     needs: [test, codacy-security-scan]
     runs-on: ubuntu-latest
@@ -110,15 +114,11 @@ jobs:
           cache: 'npm'
       - run: npm install
       - name: Install CycloneDX CLI
-        run: npm install -g @cyclonedx/bom
+        run: npm install --global @cyclonedx/cyclonedx-npm
       - name: Generate SBOM
         run: |
-          cyclonedx-bom \
-            --include-dev
-            --output-format json \
-            --project-name "${{ github.repository }}" \
-            --project-version "${{ github.sha }}" \
-            --output sbom.json
+          cyclonedx-npm 
+            --output-file sbom.json
       - name: Upload SBOM
         uses: actions/upload-artifact@v4
         with:
