@@ -121,8 +121,7 @@ jobs:
         run: npm install --global @cyclonedx/cyclonedx-npm
       - name: Generate SBOM
         run: |
-          cyclonedx-npm 
-            -o sbom.json
+          cyclonedx-npm -o sbom.json
       - name: Upload SBOM
         uses: actions/upload-artifact@v4
         with:
