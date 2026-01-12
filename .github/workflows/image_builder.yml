@@ -85,6 +85,10 @@ jobs:
         with:
           sarif_file: results.sarif
   lint-dockerfile:
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: read
     needs: [test, codacy-security-scan]
     runs-on: ubuntu-latest
     steps:
@@ -118,7 +122,7 @@ jobs:
       - name: Generate SBOM
         run: |
           cyclonedx-npm 
-            --output-file sbom.json
+            -o sbom.json
       - name: Upload SBOM
         uses: actions/upload-artifact@v4
         with:
