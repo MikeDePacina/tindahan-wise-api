@@ -146,7 +146,7 @@ jobs:
       #     path: container-sbom.json
     steps:
       - name: Build the Docker image
-        run: docker build --tag ${{ github.repository }}:v1.0.0 .
+        run: docker build . --file ./Dockerfile --tag ${{ github.repository }}:v1.0.0 
 
       - name: Save Docker image
         run: docker save ${{ github.repository }}:v1.0.0 -o image.tar
