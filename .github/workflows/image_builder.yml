@@ -158,7 +158,7 @@ jobs:
         uses: anchore/sbom-action@v0.15.10
         with:
           image: "mike-de-pacina/tindahan-wise-api:v1.0.0"
-          artifact-name: container-sbom.json
+          artifact-name: container-sbom
           format: cyclonedx-json
       - name: Upload container SBOM
         uses: actions/upload-artifact@v4
