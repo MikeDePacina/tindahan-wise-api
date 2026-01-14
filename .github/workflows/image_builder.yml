@@ -133,12 +133,13 @@ jobs:
         with:
           name: sbom
           path: node-sbom.json
+      - name: Install Syft
+        run: |
+          curl -sSfL https://get.anchore.io/syft | sudo sh -s -- -b /usr/local/bin
+          syft version
       - name: Generate SBOM with Syft
-        uses: anchore/sbom-action@bb716408e75840bbb01e839347cd213767269d4a
-        with:
-          image: transactions-service-api:v1.0.0
-          artifact-name: container-sbom.json
-          format: cyclonedx-json
+        run: |
+          syft scan ${{ github.repository }}:v1.0.0 -o cyclonedx-json=container-sbom.json
       - name: Commit SBOMs to repository
         run: |
           git config --local user.name "github-actions[bot]"
