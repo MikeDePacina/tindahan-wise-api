@@ -1,4 +1,4 @@
-FROM dhi.io/node:20-alpine3.23
+FROM node:25-alpine3.22
 
 # Create and switch to /app (recommended instead of ./src)
 WORKDIR /app
