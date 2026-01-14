@@ -146,10 +146,10 @@ jobs:
       #     path: container-sbom.json
     # steps:
       - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag ${{ github.repository }}:v1.0.0 
+        run: docker build . --file Dockerfile --tag mike-de-pacina/tindahan-wise-api:v1.0.0 
 
       - name: Save Docker image
-        run: docker save ${{ github.repository }}:v1.0.0 -o image.tar
+        run: docker save mike-de-pacina/tindahan-wise-api:v1.0.0 -o image.tar
 
       - name: Load Docker image for Syft
         run: docker load -i image.tar
@@ -157,7 +157,7 @@ jobs:
       - name: Generate container level SBOM via Syft
         uses: anchore/sbom-action@v0.15.10
         with:
-          image: "${{ github.repository }}:v1.0.0"
+          image: "mike-de-pacina/tindahan-wise-api:v1.0.0"
           artifact-name: container-sbom.json
           format: cyclonedx-json
       - name: Upload container SBOM
