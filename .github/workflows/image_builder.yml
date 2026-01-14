@@ -112,9 +112,9 @@ jobs:
       actions: write
     # needs: [test]
     runs-on: ubuntu-latest
-    # steps:
-    #   - name: Checkout code
-    #     uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
     #   - name: Build the Docker image
     #     run: docker build . --file Dockerfile --tag ${{ github.repository }}:latest
     #   - name: Use Node.js 22.x
@@ -144,9 +144,9 @@ jobs:
       #   with:
       #     name: container-sbom
       #     path: container-sbom.json
-    steps:
+    # steps:
       - name: Build the Docker image
-        run: docker build . --file ./Dockerfile --tag ${{ github.repository }}:v1.0.0 
+        run: docker build . --file Dockerfile --tag ${{ github.repository }}:v1.0.0 
 
       - name: Save Docker image
         run: docker save ${{ github.repository }}:v1.0.0 -o image.tar
