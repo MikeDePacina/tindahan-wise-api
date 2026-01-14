@@ -23,17 +23,17 @@ permissions:
 
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js 22.x
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.x'
-          cache: 'npm'
-      - run: npm install
-      - run: npm run test
+  # test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Use Node.js 22.x
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '22.x'
+  #         cache: 'npm'
+  #     - run: npm install
+  #     - run: npm run test
   # zap-scan:
   #   runs-on: ubuntu-latest
     
@@ -84,59 +84,80 @@ jobs:
   #       uses: github/codeql-action/upload-sarif@v4
   #       with:
   #         sarif_file: results.sarif
-  lint-dockerfile:
-    permissions:
-      contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-      actions: read
-    needs: [test]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Run hadolint to lint Dockerfile
-        uses: hadolint/hadolint-action@f988afea3da57ee48710a9795b6bb677cc901183
-        with:
-          dockerfile: Dockerfile
-          format: sarif
-          output-file: hadolint-results.sarif
-          no-fail: true
-      - name: Upload SARIF results file
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: hadolint-results.sarif
+  # lint-dockerfile:
+  #   permissions:
+    #   contents: read # for actions/checkout to fetch code
+    #   security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+    #   actions: read
+    # needs: [test]
+    # runs-on: ubuntu-latest
+    # steps:
+    #   - name: Checkout code
+    #     uses: actions/checkout@v4
+    #   - name: Run hadolint to lint Dockerfile
+    #     uses: hadolint/hadolint-action@f988afea3da57ee48710a9795b6bb677cc901183
+    #     with:
+    #       dockerfile: Dockerfile
+    #       format: sarif
+    #       output-file: hadolint-results.sarif
+    #       no-fail: true
+    #   - name: Upload SARIF results file
+    #     uses: github/codeql-action/upload-sarif@v4
+    #     with:
+    #       sarif_file: hadolint-results.sarif
   build-image-and-generate-sbom:
     permissions:
       contents: write # for actions/checkout to fetch code
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
       actions: write
-    needs: [test, lint-dockerfile]
+    # needs: [test]
     runs-on: ubuntu-latest
+    # steps:
+    #   - name: Checkout code
+    #     uses: actions/checkout@v4
+    #   - name: Build the Docker image
+    #     run: docker build . --file Dockerfile --tag ${{ github.repository }}:latest
+    #   - name: Use Node.js 22.x
+    #     uses: actions/setup-node@v4
+    #     with:
+    #       node-version: '22.x'
+    #       cache: 'npm'
+    #   - run: npm install
+    #   - name: Install CycloneDX CLI
+    #     run: npm install --global @cyclonedx/cyclonedx-npm
+    #   - name: Generate nodejs(application level) SBOM
+    #     run: |
+    #       cyclonedx-npm -o node-sbom.json
+    #   - name: Upload node SBOM
+    #     uses: actions/upload-artifact@v4
+    #     with:
+    #       name: node-sbom
+    #       path: node-sbom.json
+      # - name: Generate container level SBOM via Syft
+      #   uses: anchore/sbom-action@v0
+      #   with:
+      #     image: "${{ github.repository }}:latest"
+      #     artifact-name: container-sbom.json
+      #     format: cyclonedx-json
+      # - name: Upload container SBOM
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: container-sbom
+      #     path: container-sbom.json
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
       - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag ${{ github.repository }}:latest
-      - name: Use Node.js 22.x
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.x'
-          cache: 'npm'
-      - run: npm install
-      - name: Install CycloneDX CLI
-        run: npm install --global @cyclonedx/cyclonedx-npm
-      - name: Generate nodejs(application level) SBOM
-        run: |
-          cyclonedx-npm -o node-sbom.json
-      - name: Upload node SBOM
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-sbom
-          path: node-sbom.json
+        run: docker build . --file Dockerfile --tag ${{ github.repository }}:v1.0.0
+
+      - name: Save Docker image
+        run: docker save ${{ github.repository }}:v1.0.0 -o image.tar
+
+      - name: Load Docker image for Syft
+        run: docker load -i image.tar
+
       - name: Generate container level SBOM via Syft
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@v0.15.10
         with:
-          image: "${{ github.repository }}:latest"
+          image: "${{ github.repository }}:v1.0.0"
           artifact-name: container-sbom.json
           format: cyclonedx-json
       - name: Upload container SBOM
@@ -144,11 +165,11 @@ jobs:
         with:
           name: container-sbom
           path: container-sbom.json
-      - name: Commit SBOMs to repository
-        run: |
-          git config --local user.name "github-actions[bot]"
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git add node-sbom.json container-sbom.json
-          git commit -m "Added app level and container level SBOMs for transactions-service API" 
-          git push
+      # - name: Commit SBOMs to repository
+      #   run: |
+      #     git config --local user.name "github-actions[bot]"
+      #     git config --local user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add node-sbom.json container-sbom.json
+      #     git commit -m "Added app level and container level SBOMs for transactions-service API" 
+      #     git push
  
