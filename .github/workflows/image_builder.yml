@@ -136,7 +136,7 @@ jobs:
       - name: Generate container level SBOM via Syft
         uses: anchore/sbom-action@v0
         with:
-          image: "${{ github.repository }}:v1.0.0"
+          image: "${{ github.repository }}:latest"
           artifact-name: container-sbom.json
           format: cyclonedx-json
       - name: Upload container SBOM
