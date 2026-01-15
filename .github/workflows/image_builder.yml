@@ -155,12 +155,17 @@ jobs:
         run: docker load -i image.tar
 
       - name: Generate container level SBOM via Syft
-        uses: anchore/sbom-action@v0.15.10
+        uses: anchore/sbom-action@v0.21.1
         with:
           image: "mike-de-pacina/tindahan-wise-api:v1.0.0"
           artifact-name: container-sbom.json
           format: cyclonedx-json
           upload-artifact: true
-     
+      # #Uploading SBOMs as artifacts to scan and for attestation in next steps
+      # - name: Upload container SBOM
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: container-SCA 
+      #     path: container-sbom.json
    
  
