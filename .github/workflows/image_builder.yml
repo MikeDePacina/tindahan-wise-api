@@ -213,3 +213,20 @@ jobs:
         with:
           push: true
           tags: smikesword/tindahan-wise-api:v1.0.0
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v4.0.0
+      - name: attest/attach node sbom to image
+        run: |
+          cosign attest \
+          --predicate node-sbom.json \
+          --type cyclonedx \
+          smikesword/tindahan-wise-api:v1.0.0
+      - name: attest/attach container sbom to image
+        run: |
+          cosign attest \
+          --predicate container-sbom.json \
+          --type cyclonedx \
+          smikesword/tindahan-wise-api:v1.0.0
+      - name: Sign the image
+        run: |
+          cosign sign ${{ steps.build.outputs.digest }}
