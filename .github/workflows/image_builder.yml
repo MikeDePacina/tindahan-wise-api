@@ -221,13 +221,13 @@ jobs:
           cosign attest \
           --predicate node-sbom.json \
           --type cyclonedx \
-          smikesword/tindahan-wise-api@sha256:${{ steps.build.outputs.digest }}
+          smikesword/tindahan-wise-api@${{ steps.build.outputs.digest }}
       - name: attest/attach container sbom to image
         run: |
           cosign attest \
           --predicate container-sbom.json \
           --type cyclonedx \
-          smikesword/tindahan-wise-api@sha256:${{ steps.build.outputs.digest }}
+          smikesword/tindahan-wise-api@${{ steps.build.outputs.digest }}
       - name: Sign the image
         run: |
           cosign sign ${{ steps.build.outputs.digest }}
