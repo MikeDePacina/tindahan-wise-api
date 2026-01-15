@@ -150,7 +150,7 @@ jobs:
           format: cyclonedx-json
           upload-artifact: true
   #For prod fail if high severity vuln is found
-  scan-sboms:
+  scan-node-sbom:
     permissions:
       contents: write # for actions/checkout to fetch code
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
@@ -162,29 +162,41 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-sbom.json
-      - name: Download container SBOM
-        uses: actions/download-artifact@v4
-        with:
-          name: container-sbom.json
       - name: Scan node SBOM with Grype
         uses: anchore/scan-action@v7.2.3
         with:
           sbom: node-sbom.json
           output-format: sarif
-          output-file: results/grype-node-sbom-results.sarif
+          output-file: grype-node-sbom-results.sarif
           fail-build: true
           severity-cutoff: high
           only-fixed: true #only report vulnerabilities that have a fix available
+      - name: Upload SBOM scan SARIF results file
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: grype-node-sbom-results.sarif
+  scan-container-sbom:
+    permissions:
+      contents: write # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: write
+    needs: [build-image-and-generate-sbom]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download container SBOM
+        uses: actions/download-artifact@v4
+        with:
+          name: container-sbom.json
       - name: Scan container SBOM with Grype
         uses: anchore/scan-action@v7.2.3
         with:
           sbom: container-sbom.json
           output-format: sarif
-          output-file: results/grype-container-sbom-results.sarif
+          output-file: grype-container-sbom-results.sarif
           fail-build: false
           only-fixed: true #only report vulnerabilities that have a fix available
       - name: Upload SBOM scan SARIF results file
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: ./results
+          sarif_file: grype-container-sbom-results.sarif
   
