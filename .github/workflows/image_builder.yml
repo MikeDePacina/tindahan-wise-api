@@ -210,6 +210,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push
         uses: docker/build-push-action@v6
+        id: build
         with:
           push: true
           tags: smikesword/tindahan-wise-api:v1.0.0
