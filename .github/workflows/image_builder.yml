@@ -23,33 +23,19 @@ permissions:
 
 
 jobs:
-  # test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Use Node.js 22.x
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: '22.x'
-  #         cache: 'npm'
-  #     - run: npm install
-  #     - run: npm run test
-  # zap-scan:
-  #   runs-on: ubuntu-latest
-    
-    # steps:
-    #   - name: Checkout code
-    #     uses: actions/checkout@v4
-    #   - name: Run API
-    #     uses: actions/setup-node@v4
-    #     with:
-    #       node-version: '22.x'
-    #       cache: 'npm'
-    #   - run: npm install
-    #   - run: npm run start
-    #   - name: Wait for API to be ready
-    #     # This ensures ZAP doesn't start before the server is up
-    #     run: npx wait-on http://localhost:3002 --timeout 60000
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      - run: npm install
+      - run: npm run test
+  
+  
  
   # codacy-security-scan:
   #   permissions:
@@ -84,55 +70,40 @@ jobs:
   #       uses: github/codeql-action/upload-sarif@v4
   #       with:
   #         sarif_file: results.sarif
-  # lint-dockerfile:
-  #   permissions:
-    #   contents: read # for actions/checkout to fetch code
-    #   security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-    #   actions: read
-    # needs: [test]
-    # runs-on: ubuntu-latest
-    # steps:
-    #   - name: Checkout code
-    #     uses: actions/checkout@v4
-    #   - name: Run hadolint to lint Dockerfile
-    #     uses: hadolint/hadolint-action@f988afea3da57ee48710a9795b6bb677cc901183
-    #     with:
-    #       dockerfile: Dockerfile
-    #       format: sarif
-    #       output-file: hadolint-results.sarif
-    #       no-fail: true
-    #   - name: Upload SARIF results file
-    #     uses: github/codeql-action/upload-sarif@v4
-    #     with:
-    #       sarif_file: hadolint-results.sarif
+  lint-dockerfile:
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: read
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run hadolint to lint Dockerfile
+        uses: hadolint/hadolint-action@f988afea3da57ee48710a9795b6bb677cc901183
+        with:
+          dockerfile: Dockerfile
+          format: sarif
+          output-file: hadolint-results.sarif
+          no-fail: true
+      - name: Upload SARIF results file
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: hadolint-results.sarif
   build-image-and-generate-sbom:
     permissions:
       contents: write # for actions/checkout to fetch code
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
       actions: write
-    # needs: [test]
+    needs: [test, lint-dockerfile]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
     #   - name: Build the Docker image
     #     run: docker build . --file Dockerfile --tag ${{ github.repository }}:latest
-    #   - name: Use Node.js 22.x
-    #     uses: actions/setup-node@v4
-    #     with:
-    #       node-version: '22.x'
-    #       cache: 'npm'
-    #   - run: npm install
-    #   - name: Install CycloneDX CLI
-    #     run: npm install --global @cyclonedx/cyclonedx-npm
-    #   - name: Generate nodejs(application level) SBOM
-    #     run: |
-    #       cyclonedx-npm -o node-sbom.json
-    #   - name: Upload node SBOM
-    #     uses: actions/upload-artifact@v4
-    #     with:
-    #       name: node-sbom
-    #       path: node-sbom.json
+   
       # - name: Generate container level SBOM via Syft
       #   uses: anchore/sbom-action@v0
       #   with:
@@ -153,6 +124,23 @@ jobs:
 
       - name: Load Docker image for Syft
         run: docker load -i image.tar
+      
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      - run: npm install
+      - name: Install CycloneDX CLI
+        run: npm install --global @cyclonedx/cyclonedx-npm
+      - name: Generate nodejs(application level) SBOM
+        run: |
+          cyclonedx-npm -o node-sbom.json
+      - name: Upload node SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-sbom.json
+          path: node-sbom.json
 
       - name: Generate container level SBOM via Syft
         uses: anchore/sbom-action@v0.21.1
@@ -161,11 +149,47 @@ jobs:
           artifact-name: container-sbom.json
           format: cyclonedx-json
           upload-artifact: true
-      # #Uploading SBOMs as artifacts to scan and for attestation in next steps
-      # - name: Upload container SBOM
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: container-SCA 
-      #     path: container-sbom.json
-   
+  #Will fail if high severity vulnerabilities are found with available fixes
+  scan-sboms:
+    permissions:
+      contents: write # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: write
+    needs: [build-image-and-generate-sbom]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download node SBOM
+        uses: actions/download-artifact@v4
+        with:
+          name: node-sbom.json
+      - name: Download container SBOM
+        uses: actions/download-artifact@v4
+        with:
+          name: container-sbom.json
+      - name: Scan node SBOM with Grype
+        uses: anchore/scan-action@v7.2.3
+        with:
+          sbom: node-sbom.json
+          output-format: sarif
+          output-file: grype-node-sbom-results.sarif
+          fail-build: true
+          severity-cutoff: high
+          only-fixed: true #only report vulnerabilities that have a fix available
+      - name: Upload node SBOM scan SARIF results file
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: grype-node-sbom-results.sarif
+      - name: Scan container SBOM with Grype
+        uses: anchore/scan-action@v7.2.3
+        with:
+          sbom: container-sbom.json
+          output-format: sarif
+          output-file: grype-container-sbom-results.sarif
+          fail-build: true
+          severity-cutoff: high
+          only-fixed: true #only report vulnerabilities that have a fix available
+      - name: Upload container SBOM scan SARIF results file
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: grype-container-sbom-results.sarif
  
