@@ -158,18 +158,13 @@ jobs:
         uses: anchore/sbom-action@v0.15.10
         with:
           image: "mike-de-pacina/tindahan-wise-api:v1.0.0"
-          artifact-name: container-sbom
+          artifact-name: container-SCA
           format: cyclonedx-json
+      #Uploading SBOMs as artifacts to scan and for attestation in next steps
       - name: Upload container SBOM
         uses: actions/upload-artifact@v4
         with:
-          name: container-sbom
+          name: container-SCA 
           path: container-sbom.json
-      # - name: Commit SBOMs to repository
-      #   run: |
-      #     git config --local user.name "github-actions[bot]"
-      #     git config --local user.email "github-actions[bot]@users.noreply.github.com"
-      #     git add node-sbom.json container-sbom.json
-      #     git commit -m "Added app level and container level SBOMs for transactions-service API" 
-      #     git push
+   
  
