@@ -187,6 +187,7 @@ jobs:
           sarif_file: grype-container-sbom-results.sarif
   attach-sboms-and-sign-image:
     permissions:
+      id-token: write
       contents: write # for actions/checkout to fetch code
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
       actions: write
@@ -230,4 +231,4 @@ jobs:
           smikesword/tindahan-wise-api@${{ steps.build.outputs.digest }}
       - name: Sign the image
         run: |
-          cosign sign ${{ steps.build.outputs.digest }}
+          cosign sign --yes ${{ steps.build.outputs.digest }}
