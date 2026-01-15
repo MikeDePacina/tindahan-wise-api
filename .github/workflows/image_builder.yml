@@ -103,10 +103,10 @@ jobs:
         uses: actions/checkout@v4
   
       - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag mike-de-pacina/tindahan-wise-api:v1.0.0 
+        run: docker build . --file Dockerfile --tag smikesword/tindahan-wise-api:v1.0.0
 
       - name: Save Docker image
-        run: docker save mike-de-pacina/tindahan-wise-api:v1.0.0 -o image.tar
+        run: docker save smikesword/tindahan-wise-api:v1.0.0 -o image.tar
 
       - name: Load Docker image for Syft
         run: docker load -i image.tar
@@ -131,7 +131,7 @@ jobs:
       - name: Generate container level SBOM via Syft
         uses: anchore/sbom-action@v0.21.1
         with:
-          image: "mike-de-pacina/tindahan-wise-api:v1.0.0"
+          image: "smikesword/tindahan-wise-api:v1.0.0"
           artifact-name: container-sbom.json
           format: cyclonedx-json
           upload-artifact: true
@@ -212,5 +212,4 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: mike-de-pacina/tindahan-wise-api:v1.0.0
-          
+          tags: smikesword/tindahan-wise-api:v1.0.0
