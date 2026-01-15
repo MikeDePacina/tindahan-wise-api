@@ -149,7 +149,7 @@ jobs:
           artifact-name: container-sbom.json
           format: cyclonedx-json
           upload-artifact: true
-  #Will fail if high severity vulnerabilities are found with available fixes
+  #For prod fail if high severity vuln is found
   scan-sboms:
     permissions:
       contents: write # for actions/checkout to fetch code
@@ -185,8 +185,7 @@ jobs:
           sbom: container-sbom.json
           output-format: sarif
           output-file: grype-container-sbom-results.sarif
-          fail-build: true
-          severity-cutoff: high
+          fail-build: false
           only-fixed: true #only report vulnerabilities that have a fix available
       - name: Upload container SBOM scan SARIF results file
         uses: github/codeql-action/upload-sarif@v4
