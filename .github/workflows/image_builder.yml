@@ -186,5 +186,5 @@ jobs:
       - name: Upload SBOM scan SARIF results file
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: *.sarif
- 
+          sarif_file: ./*.sarif
+  
