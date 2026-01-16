@@ -21,82 +21,81 @@ permissions:
   contents: read
 
 
-
 jobs:
-  # test:
-  #   runs-on: ubuntu-latest
-  #     steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Use Node.js 22.x
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: '22.x'
-  #         cache: 'npm'
-  #     - run: npm install
-  #     - run: npm run test
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js 22.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x'
+        cache: 'npm'
+    - run: npm install
+    - run: npm run test
   
+  codacy-security-scan:
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
+    name: Codacy Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
+      - name: Run Codacy Analysis CLI
+        uses: codacy/codacy-analysis-cli-action@d840f886c4bd4edc059706d09c6a1586111c540b
+        with:
+          # Check https://github.com/codacy/codacy-analysis-cli#project-token to get your project token from your Codacy repository
+          # You can also omit the token and run the tools that support default configurations
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          verbose: true
+          output: results.sarif
+          format: sarif
+          # Adjust severity of non-security issues
+          gh-code-scanning-compat: true
+          # Force 0 exit code to allow SARIF file generation
+          # This will handover control about PR rejection to the GitHub side
+          max-allowed-issues: 2147483647
+
+      # Upload the SARIF file generated in the previous step
+      - name: Upload SARIF results file
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: results.sarif
   
- 
-  # codacy-security-scan:
-  #   permissions:
-  #     contents: read # for actions/checkout to fetch code
-  #     security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-  #     actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
-  #   name: Codacy Security Scan
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     # Checkout the repository to the GitHub Actions runner
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-
-  #     # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
-  #     - name: Run Codacy Analysis CLI
-  #       uses: codacy/codacy-analysis-cli-action@d840f886c4bd4edc059706d09c6a1586111c540b
-  #       with:
-  #         # Check https://github.com/codacy/codacy-analysis-cli#project-token to get your project token from your Codacy repository
-  #         # You can also omit the token and run the tools that support default configurations
-  #         project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-  #         verbose: true
-  #         output: results.sarif
-  #         format: sarif
-  #         # Adjust severity of non-security issues
-  #         gh-code-scanning-compat: true
-  #         # Force 0 exit code to allow SARIF file generation
-  #         # This will handover control about PR rejection to the GitHub side
-  #         max-allowed-issues: 2147483647
-
-  #     # Upload the SARIF file generated in the previous step
-  #     - name: Upload SARIF results file
-  #       uses: github/codeql-action/upload-sarif@v4
-  #       with:
-  #         sarif_file: results.sarif
-  # lint-dockerfile:
-  #   permissions:
-  #     contents: read # for actions/checkout to fetch code
-  #     security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-  #     actions: read
-  #   needs: [test]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #     - name: Run hadolint to lint Dockerfile
-  #       uses: hadolint/hadolint-action@f988afea3da57ee48710a9795b6bb677cc901183
-  #       with:
-  #         dockerfile: Dockerfile
-  #         format: sarif
-  #         output-file: hadolint-results.sarif
-  #         no-fail: true
-  #     - name: Upload SARIF results file
-  #       uses: github/codeql-action/upload-sarif@v4
-  #       with:
-  #         sarif_file: hadolint-results.sarif
+  lint-dockerfile:
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: read
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run hadolint to lint Dockerfile
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: Dockerfile
+          format: sarif
+          output-file: hadolint-results.sarif
+          no-fail: true
+      - name: Upload SARIF results file
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: hadolint-results.sarif
+  
   build-image-and-generate-sbom:
     permissions:
       contents: write # for actions/checkout to fetch code
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
       actions: write
-    # needs: [test, codacy-security-scan, lint-dockerfile]
+    needs: [test, codacy-security-scan, lint-dockerfile]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -135,6 +134,7 @@ jobs:
           artifact-name: container-sbom.json
           format: cyclonedx-json
           upload-artifact: true
+  
   #For prod fail if high severity vuln is found
   scan-node-sbom:
     permissions:
@@ -161,6 +161,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: grype-node-sbom-results.sarif
+  
   scan-container-sbom:
     permissions:
       contents: write # for actions/checkout to fetch code
@@ -185,6 +186,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: grype-container-sbom-results.sarif
+  
   attach-sboms-and-sign-image:
     permissions:
       id-token: write
