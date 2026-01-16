@@ -231,4 +231,4 @@ jobs:
           smikesword/tindahan-wise-api@${{ steps.build.outputs.digest }}
       - name: Sign the image
         run: |
-          cosign sign --yes ${{ steps.build.outputs.digest }}
+          cosign sign smikesword/tindahan-wise-api@${{ steps.build.outputs.digest }}
