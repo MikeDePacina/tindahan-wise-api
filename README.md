@@ -1,4 +1,4 @@
-# A typical DevSecOps CI/CD Pipeline for containerized workloads #
+# A typical DevSecOps CI/CD Pipeline for pushing images of containerized workloads to a registry #
 DevSecOps calls for security to be a guiding factor at every step of the SDLC. 
 
 What this looks like:
@@ -9,9 +9,16 @@ What this looks like:
 - Employing guard rails/policies via a policy agent to enforce best practices/rules
 - Monitoring and regular scanning for newly discovered threats from your software supply chain 
   
-## The general flow/steps of a DevSecOps pipeline for creating container images: ##
-![Uploading DevSecOps.drawio.svg…]()
+## Below is a diagram of this repo's pushing image to registry pipeline  ##
 
+<img width="1041" height="179" alt="My pushing image to registry pipeline drawio" src="https://github.com/user-attachments/assets/0947809e-d121-483b-af60-4c1897f18f24" />
+
+
+NOTE: I didn't include a DAST scan (a vulnerability scan of the app running) because it's time-consuming and I didn't want to incur costs, but in production environments, it is typical to run DAST scans using tools like OWASP ZAP after or in parallel with SAST scanning.
+
+After this pipeline, the typical next steps are:
+1) Verifying the image (its signature and attestations) in the registry via cosign before pushing it to be released on prod. You can also use a Policy Engine like OPA to enforce only allowing verified images to be pulled.
+2) Runtime security monitoring with tools like Falco and Cilium
 
 References:
 
