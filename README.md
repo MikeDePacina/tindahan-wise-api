@@ -11,10 +11,7 @@ What this looks like:
   
 ## Below is a diagram of this repo's pushing image to registry pipeline  ##
 
-<img width="1041" height="179" alt="My pushing image to registry pipeline drawio" src="https://github.com/user-attachments/assets/0947809e-d121-483b-af60-4c1897f18f24" />
-
-
-NOTE: I didn't include a DAST scan (a vulnerability scan of the app running) because it's time-consuming and I didn't want to incur costs, but in production environments, it is typical to run DAST scans using tools like OWASP ZAP after or in parallel with SAST scanning.
+<img width="1211" height="179" alt="My pushing image to registry pipeline drawio" src="https://github.com/user-attachments/assets/95b033a9-a979-49bd-a0b3-cb3cfcffb964" />
 
 After this pipeline, the typical next steps are:
 1) Verifying the image (its signature and attestations) in the registry via cosign before pushing it to be released on prod. You can also use a Policy Engine like OPA to enforce only allowing verified images to be pulled.
