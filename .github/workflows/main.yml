@@ -10,5 +10,23 @@ permissions:
     issues: write
 
 jobs:
+    test:
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      - run: npm install
+      - run: npm run test
+    sast-scan:
+      uses: ./.github/workflows/sast-scan.yml
+      needs: test
     sca-and-dast-scan:
+        needs: sast-scan
         uses: ./.github/workflows/generate-scan-sbom.yml
+    attest-sign-and-push:
+      uses: ./.github/workflows/attest-sign-push.yml
+      needs: [sast-scan, sca-and-dast-scan]
