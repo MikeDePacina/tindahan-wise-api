@@ -100,8 +100,10 @@ jobs:
           sarif_file: grype-container-sbom-results.sarif
   owasp-zap-scan:
     permissions:
-      contents: read # for actions/checkout to fetch code
+      contents: write # for actions/checkout to fetch code
       actions: write
+      security-events: write # 
+      issues: write
     needs: [build-image-and-generate-sbom, scan-node-sbom, scan-container-sbom]
     runs-on: ubuntu-latest
     steps:
