@@ -1,0 +1,8 @@
+name: image publisher pipeline
+on:
+ push:
+   branches: [ "main" ]
+
+jobs:
+    sca-and-dast-scan:
+        uses: ./.github/workflows/generate-scan-sbom.yml

@@ -1,0 +1,128 @@
+name: Generate and Scan app code and container SBOMs using CycloneDX, Syft and Grype  
+on:
+  workflow_call:
+
+jobs:
+  build-image-and-generate-sbom:
+    permissions:
+      contents: write # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+  
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag smikesword/tindahan-wise-api:v1.0.0
+
+      - name: Save Docker image
+        run: docker save smikesword/tindahan-wise-api:v1.0.0 -o image.tar
+
+      - name: Load Docker image for Syft
+        run: docker load -i image.tar
+      
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      - run: npm install
+      - name: Install CycloneDX CLI
+        run: npm install --global @cyclonedx/cyclonedx-npm
+      - name: Generate nodejs(application level) SBOM
+        run: |
+          cyclonedx-npm -o node-sbom.json
+      - name: Upload node SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-sbom.json
+          path: node-sbom.json
+
+      - name: Generate container level SBOM via Syft
+        uses: anchore/sbom-action@v0.21.1
+        with:
+          image: "smikesword/tindahan-wise-api:v1.0.0"
+          artifact-name: container-sbom.json
+          format: cyclonedx-json
+          upload-artifact: true
+  
+  #For prod fail if high severity vuln is found
+  scan-node-sbom:
+    permissions:
+      contents: write # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: write
+    needs: [build-image-and-generate-sbom]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download node SBOM
+        uses: actions/download-artifact@v4
+        with:
+          name: node-sbom.json
+      - name: Scan node SBOM with Grype
+        uses: anchore/scan-action@v7.2.3
+        with:
+          sbom: node-sbom.json
+          output-format: sarif
+          output-file: grype-node-sbom-results.sarif
+          fail-build: true
+          severity-cutoff: high
+          only-fixed: true #only report vulnerabilities that have a fix available
+      - name: Upload SBOM scan SARIF results file
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: grype-node-sbom-results.sarif
+  
+  scan-container-sbom:
+    permissions:
+      contents: write # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: write
+    needs: [build-image-and-generate-sbom]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download container SBOM
+        uses: actions/download-artifact@v4
+        with:
+          name: container-sbom.json
+      - name: Scan container SBOM with Grype
+        uses: anchore/scan-action@v7.2.3
+        with:
+          sbom: container-sbom.json
+          output-format: sarif
+          output-file: grype-container-sbom-results.sarif
+          fail-build: false
+          only-fixed: true #only report vulnerabilities that have a fix available
+      - name: Upload SBOM scan SARIF results file
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: grype-container-sbom-results.sarif
+  owasp-zap-scan:
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      actions: write
+    needs: [build-image-and-generate-sbom, scan-node-sbom, scan-container-sbom]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+  
+        #Run container
+      - name: Build Docker Image
+        run: |
+            docker build -t smikesword/tindahan-wise-api:v1.0.0 .
+            docker run -d -p 3002:3002 smikesword/tindahan-wise-api:v1.0.0
+            
+      - name: Wait for Docker container to be ready
+        run: sleep 30
+
+      - name: Confirm Docker container is running
+        run: docker ps
+
+      - name: Run OWASP ZAP api scan
+        uses: zaproxy/action-api-scan@v0.10.0
+        with:
+          target: 'http://0.0.0.0:3002'  
+          
+      
